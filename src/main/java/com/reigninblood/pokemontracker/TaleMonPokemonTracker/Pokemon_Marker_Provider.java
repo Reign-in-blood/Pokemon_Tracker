@@ -3,6 +3,7 @@ package com.reigninblood.pokemontracker.TaleMonPokemonTracker;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.protocol.FormattedMessage;
 import com.hypixel.hytale.protocol.packets.worldmap.MapMarker;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
@@ -141,9 +142,6 @@ public class Pokemon_Marker_Provider {
             forceStringField(marker, "id", id);
             applyMarkerText(marker, label);
             forceStringField(marker, "markerImage", icon);
-            forceStringField(marker, "icon", icon);
-
-            applyMarkerDisplayFlags(marker);
 
             boolean ok = forceProtocolTransform(marker, pos);
             if (!ok && dumpedOnce) {
@@ -156,23 +154,47 @@ public class Pokemon_Marker_Provider {
     }
 
     private void applyMarkerText(MapMarker marker, String label) {
-        forceStringField(marker, "name", label);
-        forceStringField(marker, "label", label);
-        forceStringField(marker, "title", label);
-        forceStringField(marker, "displayName", label);
-        forceStringField(marker, "text", label);
-        forceStringField(marker, "description", label);
-        forceStringField(marker, "tooltip", label);
-        forceStringField(marker, "subtitle", label);
+        marker.name = makeFormattedMessage(label);
+        marker.customName = label;
     }
 
-    private void applyMarkerDisplayFlags(MapMarker marker) {
-        forceBooleanField(marker, "showDistance", true);
-        forceBooleanField(marker, "displayDistance", true);
-        forceBooleanField(marker, "distanceVisible", true);
-        forceBooleanField(marker, "showLabel", true);
-        forceBooleanField(marker, "displayLabel", true);
-        forceBooleanField(marker, "showName", true);
+    private FormattedMessage makeFormattedMessage(String text) {
+        if (text == null) return null;
+
+        try {
+            for (Method m : FormattedMessage.class.getMethods()) {
+                if (!java.lang.reflect.Modifier.isStatic(m.getModifiers())) continue;
+                if (m.getReturnType() != FormattedMessage.class) continue;
+
+                Class<?>[] p = m.getParameterTypes();
+                if (p.length == 1 && p[0] == String.class) {
+                    String n = m.getName().toLowerCase(Locale.ROOT);
+                    if (n.contains("plain") || n.contains("text") || n.contains("string") || n.contains("message") || n.contains("from")) {
+                        Object obj = m.invoke(null, text);
+                        if (obj instanceof FormattedMessage) return (FormattedMessage) obj;
+                    }
+                }
+            }
+        } catch (Throwable ignored) { }
+
+        try {
+            Constructor<FormattedMessage> c = FormattedMessage.class.getDeclaredConstructor(String.class);
+            c.setAccessible(true);
+            return c.newInstance(text);
+        } catch (Throwable ignored) { }
+
+        try {
+            Constructor<?>[] constructors = FormattedMessage.class.getConstructors();
+            for (Constructor<?> c : constructors) {
+                Class<?>[] p = c.getParameterTypes();
+                if (p.length == 1 && p[0] == String.class) {
+                    Object obj = c.newInstance(text);
+                    if (obj instanceof FormattedMessage) return (FormattedMessage) obj;
+                }
+            }
+        } catch (Throwable ignored) { }
+
+        return null;
     }
 
     private void pushMarker(Object collector, MapMarker marker) {
@@ -395,18 +417,6 @@ public class Pokemon_Marker_Provider {
             if (f == null) return;
             f.setAccessible(true);
             f.set(obj, value);
-        } catch (Throwable ignored) { }
-    }
-
-    private void forceBooleanField(Object obj, String fieldName, boolean value) {
-        try {
-            Field f = findFieldDeep(obj.getClass(), fieldName);
-            if (f == null) return;
-            f.setAccessible(true);
-
-            Class<?> t = f.getType();
-            if (t == boolean.class) f.setBoolean(obj, value);
-            else if (t == Boolean.class) f.set(obj, value);
         } catch (Throwable ignored) { }
     }
 
