@@ -139,8 +139,11 @@ public class Pokemon_Marker_Provider {
             if (marker == null) return null;
 
             forceStringField(marker, "id", id);
-            forceStringField(marker, "name", label);
+            applyMarkerText(marker, label);
             forceStringField(marker, "markerImage", icon);
+            forceStringField(marker, "icon", icon);
+
+            applyMarkerDisplayFlags(marker);
 
             boolean ok = forceProtocolTransform(marker, pos);
             if (!ok && dumpedOnce) {
@@ -150,6 +153,26 @@ public class Pokemon_Marker_Provider {
         } catch (Throwable ignored) {
             return null;
         }
+    }
+
+    private void applyMarkerText(MapMarker marker, String label) {
+        forceStringField(marker, "name", label);
+        forceStringField(marker, "label", label);
+        forceStringField(marker, "title", label);
+        forceStringField(marker, "displayName", label);
+        forceStringField(marker, "text", label);
+        forceStringField(marker, "description", label);
+        forceStringField(marker, "tooltip", label);
+        forceStringField(marker, "subtitle", label);
+    }
+
+    private void applyMarkerDisplayFlags(MapMarker marker) {
+        forceBooleanField(marker, "showDistance", true);
+        forceBooleanField(marker, "displayDistance", true);
+        forceBooleanField(marker, "distanceVisible", true);
+        forceBooleanField(marker, "showLabel", true);
+        forceBooleanField(marker, "displayLabel", true);
+        forceBooleanField(marker, "showName", true);
     }
 
     private void pushMarker(Object collector, MapMarker marker) {
@@ -372,6 +395,18 @@ public class Pokemon_Marker_Provider {
             if (f == null) return;
             f.setAccessible(true);
             f.set(obj, value);
+        } catch (Throwable ignored) { }
+    }
+
+    private void forceBooleanField(Object obj, String fieldName, boolean value) {
+        try {
+            Field f = findFieldDeep(obj.getClass(), fieldName);
+            if (f == null) return;
+            f.setAccessible(true);
+
+            Class<?> t = f.getType();
+            if (t == boolean.class) f.setBoolean(obj, value);
+            else if (t == Boolean.class) f.set(obj, value);
         } catch (Throwable ignored) { }
     }
 
