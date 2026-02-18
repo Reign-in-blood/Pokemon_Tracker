@@ -7,7 +7,6 @@ import com.hypixel.hytale.protocol.packets.worldmap.MapMarker;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.worldmap.MarkersCollector;
 import com.hypixel.hytale.server.core.universe.world.worldmap.WorldMapManager;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -21,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
-public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
+public class Pokemon_Marker_Provider {
 
     private static final Logger LOGGER = Logger.getLogger("TaleMonPokemonTracker");
 
@@ -43,8 +42,11 @@ public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
         this.cache = cache;
     }
 
-    @Override
-    public void update(World world, Player viewingPlayer, MarkersCollector collector) {
+    public WorldMapManager.MarkerProvider asMarkerProvider() {
+        return (world, viewingPlayer, collector) -> update(world, viewingPlayer, collector);
+    }
+
+    public void update(World world, Player viewingPlayer, Object collector) {
         int call = UPDATE_CALLS.incrementAndGet();
         boolean shouldLog = (call % LOG_EVERY_N_CALLS == 1);
 
@@ -150,7 +152,7 @@ public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
         }
     }
 
-    private void pushMarker(MarkersCollector collector, MapMarker marker) {
+    private void pushMarker(Object collector, MapMarker marker) {
         if (collector == null || marker == null) return;
 
         try {
