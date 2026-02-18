@@ -7,6 +7,7 @@ import com.hypixel.hytale.protocol.packets.worldmap.MapMarker;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.worldmap.MarkersCollector;
 import com.hypixel.hytale.server.core.universe.world.worldmap.WorldMapManager;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
@@ -43,7 +44,7 @@ public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
     }
 
     @Override
-    public void update(World world, Player viewingPlayer, WorldMapManager.MarkerProvider.MarkersCollector collector) {
+    public void update(World world, Player viewingPlayer, MarkersCollector collector) {
         int call = UPDATE_CALLS.incrementAndGet();
         boolean shouldLog = (call % LOG_EVERY_N_CALLS == 1);
 
@@ -149,7 +150,7 @@ public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
         }
     }
 
-    private void pushMarker(WorldMapManager.MarkerProvider.MarkersCollector collector, MapMarker marker) {
+    private void pushMarker(MarkersCollector collector, MapMarker marker) {
         if (collector == null || marker == null) return;
 
         try {
