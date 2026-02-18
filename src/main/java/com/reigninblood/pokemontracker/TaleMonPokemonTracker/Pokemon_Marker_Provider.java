@@ -3,12 +3,12 @@ package com.reigninblood.pokemontracker.TaleMonPokemonTracker;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
+import com.hypixel.hytale.protocol.FormattedMessage;
 import com.hypixel.hytale.protocol.packets.worldmap.MapMarker;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.worldmap.WorldMapManager;
-import com.hypixel.hytale.server.core.universe.world.worldmap.markers.MapMarkerTracker;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.lang.reflect.Constructor;
@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 
-public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
+public class Pokemon_Marker_Provider {
 
     private static final Logger LOGGER = Logger.getLogger("TaleMonPokemonTracker");
 
@@ -43,14 +43,16 @@ public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
         this.cache = cache;
     }
 
-    @Override
-    public void update(World world, MapMarkerTracker tracker, int viewRadius, int chunkX, int chunkZ) {
+    public WorldMapManager.MarkerProvider asMarkerProvider() {
+        return (world, viewingPlayer, collector) -> update(world, viewingPlayer, collector);
+    }
+
+    public void update(World world, Player viewingPlayer, Object collector) {
         int call = UPDATE_CALLS.incrementAndGet();
         boolean shouldLog = (call % LOG_EVERY_N_CALLS == 1);
 
         try {
-            Player viewingPlayer = tracker.getPlayer();
-            if (viewingPlayer == null) return;
+            if (viewingPlayer == null || collector == null) return;
 
             String playerKey = String.valueOf(viewingPlayer.getDisplayName());
 
@@ -74,7 +76,7 @@ public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
                 MapMarker marker = buildMarker(id, label, icon, pos);
                 if (marker == null) continue;
 
-                tracker.trySendMarker(viewRadius, chunkX, chunkZ, marker);
+                pushMarker(collector, marker);
             }
 
         } catch (Throwable t) {
@@ -138,7 +140,7 @@ public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
             if (marker == null) return null;
 
             forceStringField(marker, "id", id);
-            forceStringField(marker, "name", label);
+            applyMarkerText(marker, label);
             forceStringField(marker, "markerImage", icon);
 
             boolean ok = forceProtocolTransform(marker, pos);
@@ -149,6 +151,78 @@ public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
         } catch (Throwable ignored) {
             return null;
         }
+    }
+
+    private void applyMarkerText(MapMarker marker, String label) {
+        marker.name = makeFormattedMessage(label);
+        marker.customName = label;
+    }
+
+    private FormattedMessage makeFormattedMessage(String text) {
+        if (text == null) return null;
+
+        try {
+            for (Method m : FormattedMessage.class.getMethods()) {
+                if (!java.lang.reflect.Modifier.isStatic(m.getModifiers())) continue;
+                if (m.getReturnType() != FormattedMessage.class) continue;
+
+                Class<?>[] p = m.getParameterTypes();
+                if (p.length == 1 && p[0] == String.class) {
+                    String n = m.getName().toLowerCase(Locale.ROOT);
+                    if (n.contains("plain") || n.contains("text") || n.contains("string") || n.contains("message") || n.contains("from")) {
+                        Object obj = m.invoke(null, text);
+                        if (obj instanceof FormattedMessage) return (FormattedMessage) obj;
+                    }
+                }
+            }
+        } catch (Throwable ignored) { }
+
+        try {
+            Constructor<FormattedMessage> c = FormattedMessage.class.getDeclaredConstructor(String.class);
+            c.setAccessible(true);
+            return c.newInstance(text);
+        } catch (Throwable ignored) { }
+
+        try {
+            Constructor<?>[] constructors = FormattedMessage.class.getConstructors();
+            for (Constructor<?> c : constructors) {
+                Class<?>[] p = c.getParameterTypes();
+                if (p.length == 1 && p[0] == String.class) {
+                    Object obj = c.newInstance(text);
+                    if (obj instanceof FormattedMessage) return (FormattedMessage) obj;
+                }
+            }
+        } catch (Throwable ignored) { }
+
+        return null;
+    }
+
+    private void pushMarker(Object collector, MapMarker marker) {
+        if (collector == null || marker == null) return;
+
+        try {
+            Method directCollect = collector.getClass().getMethod("collect", MapMarker.class);
+            directCollect.invoke(collector, marker);
+            return;
+        } catch (Throwable ignored) { }
+
+        try {
+            Method directAdd = collector.getClass().getMethod("add", MapMarker.class);
+            directAdd.invoke(collector, marker);
+            return;
+        } catch (Throwable ignored) { }
+
+        try {
+            for (Method m : collector.getClass().getMethods()) {
+                Class<?>[] params = m.getParameterTypes();
+                if (params.length != 1) continue;
+                if (!params[0].isAssignableFrom(MapMarker.class) && !MapMarker.class.isAssignableFrom(params[0])) continue;
+
+                m.setAccessible(true);
+                m.invoke(collector, marker);
+                return;
+            }
+        } catch (Throwable ignored) { }
     }
 
     private MapMarker tryConstructMapMarker(String id, String label, String icon) {

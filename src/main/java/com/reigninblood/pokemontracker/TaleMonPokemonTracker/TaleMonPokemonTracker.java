@@ -4,6 +4,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.world.worldmap.WorldMapManager;
 
 import javax.annotation.Nonnull;
 import java.util.HashSet;
@@ -20,7 +21,7 @@ public class TaleMonPokemonTracker extends JavaPlugin {
     private final Set<String> registeredWorlds = new HashSet<>();
 
     private Pokemon_Tracker_Cache trackerCache;
-    private Pokemon_Marker_Provider markerProvider;
+    private WorldMapManager.MarkerProvider markerProvider;
 
     public TaleMonPokemonTracker(@Nonnull JavaPluginInit init) {
         super(init);
@@ -35,7 +36,7 @@ public class TaleMonPokemonTracker extends JavaPlugin {
 
         this.getCommandRegistry().registerCommand(new Command_Tracker(trackerCache));
 
-        markerProvider = new Pokemon_Marker_Provider(trackerCache);
+        markerProvider = new Pokemon_Marker_Provider(trackerCache).asMarkerProvider();
 
         scheduler.scheduleAtFixedRate(() -> {
             try {
