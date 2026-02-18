@@ -8,7 +8,6 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.worldmap.WorldMapManager;
-import com.hypixel.hytale.server.core.universe.world.worldmap.markers.MapMarkerTracker;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
 import java.lang.reflect.Constructor;
@@ -44,13 +43,12 @@ public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
     }
 
     @Override
-    public void update(World world, MapMarkerTracker tracker, int viewRadius, int chunkX, int chunkZ) {
+    public void update(World world, Player viewingPlayer, WorldMapManager.MarkerProvider.MarkersCollector collector) {
         int call = UPDATE_CALLS.incrementAndGet();
         boolean shouldLog = (call % LOG_EVERY_N_CALLS == 1);
 
         try {
-            Player viewingPlayer = tracker.getPlayer();
-            if (viewingPlayer == null) return;
+            if (viewingPlayer == null || collector == null) return;
 
             String playerKey = String.valueOf(viewingPlayer.getDisplayName());
 
@@ -74,7 +72,7 @@ public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
                 MapMarker marker = buildMarker(id, label, icon, pos);
                 if (marker == null) continue;
 
-                tracker.trySendMarker(viewRadius, chunkX, chunkZ, marker);
+                pushMarker(collector, marker);
             }
 
         } catch (Throwable t) {
@@ -149,6 +147,34 @@ public class Pokemon_Marker_Provider implements WorldMapManager.MarkerProvider {
         } catch (Throwable ignored) {
             return null;
         }
+    }
+
+    private void pushMarker(WorldMapManager.MarkerProvider.MarkersCollector collector, MapMarker marker) {
+        if (collector == null || marker == null) return;
+
+        try {
+            Method directCollect = collector.getClass().getMethod("collect", MapMarker.class);
+            directCollect.invoke(collector, marker);
+            return;
+        } catch (Throwable ignored) { }
+
+        try {
+            Method directAdd = collector.getClass().getMethod("add", MapMarker.class);
+            directAdd.invoke(collector, marker);
+            return;
+        } catch (Throwable ignored) { }
+
+        try {
+            for (Method m : collector.getClass().getMethods()) {
+                Class<?>[] params = m.getParameterTypes();
+                if (params.length != 1) continue;
+                if (!params[0].isAssignableFrom(MapMarker.class) && !MapMarker.class.isAssignableFrom(params[0])) continue;
+
+                m.setAccessible(true);
+                m.invoke(collector, marker);
+                return;
+            }
+        } catch (Throwable ignored) { }
     }
 
     private MapMarker tryConstructMapMarker(String id, String label, String icon) {
