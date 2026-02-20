@@ -1,15 +1,15 @@
 {
     "Group": "TaleMon",
     "Name": "TaleMonPokemonTracker",
-    "Version": "0.1.1",
+    "Version": "0.1.2",
     "Description": "Track pokemons in Hytale",
     "Authors": [
         {
             "Name": "ReignInBlood"
         }
     ],
-    "Website": "",
-    "ServerVersion": "2026.02.18-f3b8fff95",
+    "Website": "https://www.curseforge.com/members/reigninblood/projects",
+    "ServerVersion": "2026.02.19-1a311a592",
     "Dependencies": {
         
     },
