@@ -1,7 +1,7 @@
 {
     "Group": "TaleMon",
     "Name": "TaleMonPokemonTracker",
-    "Version": "0.1.2",
+    "Version": "0.1.3",
     "Description": "Track pokemons in Hytale",
     "Authors": [
         {
