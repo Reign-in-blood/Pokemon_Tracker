@@ -18,10 +18,12 @@ Pidgey
 Pidgeotto
 Pidgeot
 Rattata
+Talemon_Rattata
+Talemon_0019_Rattata
 Raticate
 Spearow
 Fearow
-Ekans
+Ekansdz
 Arbok
 Pikachu
 Raichu
