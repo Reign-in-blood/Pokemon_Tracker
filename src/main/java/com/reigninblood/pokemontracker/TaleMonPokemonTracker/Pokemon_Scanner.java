@@ -38,7 +38,9 @@ public final class Pokemon_Scanner {
                 String role = npc.getRoleName();
                 if (role == null || role.isEmpty()) continue;
 
-                if (!pokemonRoles.contains(role)) continue;
+                String displayRole = toDisplayRole(role);
+                boolean matches = pokemonRoles.contains(role) || pokemonRoles.contains(displayRole);
+                if (!matches) continue;
 
                 Ref<EntityStore> entityRef = chunk.getReferenceTo(i);
                 if (entityRef == null || !entityRef.isValid()) continue;
@@ -51,7 +53,7 @@ public final class Pokemon_Scanner {
                 if (dist > radius) continue;
 
                 int eid = entityRef.getIndex();
-                hits.add(new Pokemon_Hit(role, pos.x, pos.y, pos.z, dist, eid));
+                hits.add(new Pokemon_Hit(displayRole, pos.x, pos.y, pos.z, dist, eid));
             }
         });
 
@@ -63,5 +65,14 @@ public final class Pokemon_Scanner {
         double dy = a.y - b.y;
         double dz = a.z - b.z;
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    private static String toDisplayRole(String role) {
+        String clean = role.trim();
+        String prefix = "Talemon_";
+        if (clean.regionMatches(true, 0, prefix, 0, prefix.length()) && clean.length() > prefix.length()) {
+            return clean.substring(prefix.length());
+        }
+        return clean;
     }
 }
