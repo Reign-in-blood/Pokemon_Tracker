@@ -57,7 +57,10 @@ public class Command_Tracker extends CommandBase {
     private static Set<String> loadPokemonRolesFromJsonFile() {
         List<Path> candidates = Arrays.asList(
                 Paths.get("Server", "NPC", "Groups", "Pokemon.json"),
+                Paths.get("Server", "NPC", "Groups", "Pokemon_Role.json"),
                 Paths.get("run", "Server", "NPC", "Groups", "Pokemon.json"),
+                Paths.get("run", "Server", "NPC", "Groups", "Pokemon_Role.json"),
+                Paths.get("NPC", "Groups", "Pokemon_Role.json"),
                 Paths.get("NPC", "Groups", "Pokemon.json")
         );
 
